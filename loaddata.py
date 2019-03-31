@@ -37,9 +37,7 @@ class FacialKeyPointsDataset:
         img = cv2.imread(os.path.join(self.images_dr,img_name))
         # convert image from BGR to RGB
         img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-        keypoints = self.csv_file.iloc[idx][1::].as_matrix().astype('float32').reshape(-1,2)
-        # pytorch expect img as (channels, w , h) so we do that 
-        #img = np.transpose(img,(2,0,1))
+        keypoints = self.csv_file.iloc[idx][1::].values.astype('float32').reshape(-1,2)
         sample = (img,keypoints)
         if(self.transform):
             sample = self.transform(sample)
@@ -67,10 +65,10 @@ class Rescale(object):
         h , w = img.shape[:2]
         if(isinstance(self.output_size,int)):
             if h> w :
-                new_h , new_w = h * (self.output_size/w) , self.output_size
+                new_h , new_w = h *self.output_size /w , self.output_size
             
             else:
-                new_h , new_w =  self.output_size , w * (self.output_size/h)
+                new_h , new_w =  self.output_size , w * self.output_size / h
             
         else:
             new_h , new_w = self.output_size 
@@ -133,11 +131,21 @@ class RandomCrop:
         keypts = keypts - [left,top]
         return (img,keypts)
 
-"""test = FacialKeyPointsDataset('./data/training','data/training_frames_keypoints.csv')
-im , k = test[0]
-print(im.shape)
-test2 = Rescale((255,255))
-img , k = test2((im,k))
-print(len(test))
 
-print(img.shape)"""
+class ToTensor:
+    """Convert ndarrays in sample to Tensors."""
+
+    def __call__(self, sample):
+        img, keypts = sample
+         
+        # if image has no grayscale color channel, add one
+        if(len(img.shape) == 2):
+            # add that third color dim
+            img = img.reshape(img.shape[0], img.shape[1], 1)
+            
+        # swap color axis because
+        # numpy image: H x W x C
+        # torch image: C X H X W
+        img = img.transpose((2, 0, 1))
+        
+        return img , keypts
