@@ -2,11 +2,13 @@ import numpy as np
 import cv2
 import torch
 import torchvision
-from torch.utils.data import DataLoader
-from torchvision import transforms
+import numpy as np
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+from torchvision import transforms
+
 
 
 class FacialKeyPointsDataset:
@@ -95,9 +97,41 @@ class Normalize:
         new_keypts = np.copy(keypts)
 
         # convert image to gray 
-        new_img = cv2.cvtColor(img,cv.COLOR_RGB2GRAY)
-        
+        new_img = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+        new_img = new_img/255.0
 
+        #normalize keypoints too
+        new_keypts = (keypts-100) / 50.0
+
+        return (new_img,new_keypts)
+
+class RandomCrop:
+    """Crop randomly the image in a sample.
+
+    Args:
+        output_size (tuple or int): Desired output size. If int, square crop
+            is made.
+    """
+    def __init__(self,output_size):
+        assert isinstance(output_size,(int,tuple))
+
+        if(isinstance(output_size,int)):
+            self.output_size = (output_size,output_size)
+        else:
+            assert len(output_size) == 2
+            self.output_size = output_size
+
+    def __call__(self,sample):
+        img , keypts = sample
+        h , w = img.shape[0:2]
+        new_h , new_w = self.output_size
+
+        top  = np.random.randint(0,h-new_h)
+        left = np.random.randint(0,w-new_w)
+
+        img = img[top:top+new_h,left:left+new_w]
+        keypts = keypts - [left,top]
+        return (img,keypts)
 
 """test = FacialKeyPointsDataset('./data/training','data/training_frames_keypoints.csv')
 im , k = test[0]
