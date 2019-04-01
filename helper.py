@@ -2,6 +2,49 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 
+
+class StopEarly:
+    """ Stop training early and save model if no good improvment """
+
+    def __init__(self,model_dir = 'saved_models/',patience=10):
+        """ 
+            Args:
+                patience : How long to wait after last time (training/test/val) loss improved .
+                            Default: 7
+                model_dir : dir to save model when we git best loss
+                            Default: saved_models/
+                
+                Hint: we can use this class to stop model depend on test loss or validation loss,
+                      by just pass val/test loss instead of train loss
+        """
+        self.best_loss = None
+        self.patience = patience
+        self.counter = 0
+        self.model_dir = model_dir
+
+    def __call__(self,model,loss):
+        # model : your traning model
+        # loss : current loss
+        if self.best_loss is None :
+            self.best_loss = loss
+        
+        else:
+            
+            if self.counter >= self.patience:
+                return True
+            if loss >= self.best_loss :
+                self.counter += 1
+                print(f"no improvement for {self.counter} / {self.patience}..")
+            else:
+                self.counter = 0
+                self.best_loss = loss
+                # save model 
+                print(f'We get new best loss: {self.best_loss} , saving model...')
+                torch.save(model.state_dict(),self.model_dir+"model.pt")
+                print('model saved.')
+            return False
+
+        
 def show_keypoints(img,keypts,gt=None,gray=False):
     # gt : right keypts and it's option
     if(gray):
