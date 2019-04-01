@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
-
+import os
 
 class StopEarly:
     """ Stop training early and save model if no good improvment """
@@ -21,12 +21,14 @@ class StopEarly:
         self.patience = patience
         self.counter = 0
         self.model_dir = model_dir
-
+        if(not os.path.exists(self.model_dir)):
+            os.makedirs(model_dir)
     def __call__(self,model,loss):
         # model : your traning model
         # loss : current loss
         if self.best_loss is None :
             self.best_loss = loss
+            return False
         
         else:
             
@@ -34,14 +36,14 @@ class StopEarly:
                 return True
             if loss >= self.best_loss :
                 self.counter += 1
-                print(f"no improvement for {self.counter} / {self.patience}..")
+                print(f"no improvement for {self.counter} / {self.patience}./n------------")
             else:
                 self.counter = 0
                 self.best_loss = loss
                 # save model 
                 print(f'We get new best loss: {self.best_loss} , saving model...')
                 torch.save(model.state_dict(),self.model_dir+"model.pt")
-                print('model saved.')
+                print('model saved./n------------')
             return False
 
         
